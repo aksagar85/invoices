@@ -18,25 +18,29 @@ import com.assignment.invoices.domain.Invoice;
 import com.assignment.invoices.domain.LineItem;
 import com.assignment.invoices.repo.InvoiceRepository;
 import com.assignment.invoices.repo.LineItemRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping(path = "/invoices/{invoiceId}/lineItems")
 public class LineItemController {
-	LineItemRepository lineItemRepository;
-	InvoiceRepository invoiceRepository;
-	
-	@Autowired
-	public LineItemController(LineItemRepository lineItemRepository, InvoiceRepository invoiceRepository)
-	{
-		this.lineItemRepository = lineItemRepository;
-		this.invoiceRepository = invoiceRepository;
-	}
-	
-	protected LineItemController()
-	{
-		
-	}
-	
+    LineItemRepository lineItemRepository;
+    InvoiceRepository invoiceRepository;
+    
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    
+    @Autowired
+    public LineItemController(LineItemRepository lineItemRepository, InvoiceRepository invoiceRepository)
+    {
+        this.lineItemRepository = lineItemRepository;
+        this.invoiceRepository = invoiceRepository;
+    }
+    
+    protected LineItemController()
+    {
+        
+    }
+    
     /**
      * Create a LineItem.
      *
@@ -48,10 +52,11 @@ public class LineItemController {
     @ResponseStatus(HttpStatus.CREATED)
     public void createLineItem(@PathVariable(value = "invoiceId") int invoiceId, @RequestBody @Validated LineItemDto lineItemDto) {
         Invoice invoice = verifyInvoice(invoiceId);
-		if(invoice == null)
-		{
-			throw new RuntimeException("Invoice Does Not Exist" + invoiceId);
-		}
+        if(invoice == null)
+        {
+            logger.debug("Invoice " + invoiceId +" does not exist");
+            throw new RuntimeException("Invoice Does Not Exist" + invoiceId);
+        }
         lineItemRepository.save(new LineItem(lineItemDto.getDescription(), lineItemDto.getPrice(), invoice ));
     }
 
@@ -65,7 +70,7 @@ public class LineItemController {
     public List<LineItemDto> getAllLineItemsForInvoice(@PathVariable(value = "invoiceId") int invoiceId) {
         Invoice invoice = verifyInvoice(invoiceId);
         return lineItemRepository.findByInvoiceInvoiceId(invoiceId).stream().map(lineItem -> toDto(lineItem))
-        		.collect(Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     /**
@@ -90,8 +95,9 @@ public class LineItemController {
         List<LineItem> lineItems = lineItemRepository.findByInvoiceInvoiceId(invoiceId);
         if(lineItems == null || lineItems.isEmpty())
         {
-        	double result = 0;
-        	return new AbstractMap.SimpleEntry<String, Double>("total", result);
+            logger.info("Total is zero for invoice " + invoiceId );
+            double result = 0;
+            return new AbstractMap.SimpleEntry<String, Double>("total", result);
         }
         double total = lineItems.stream().mapToInt(LineItem::getPrice).sum();
         double result = total!=0 ? total:null;
@@ -121,12 +127,14 @@ public class LineItemController {
      */
     @RequestMapping(method = RequestMethod.PATCH, path = "/{Id}")
     public LineItemDto updateWithPatch(@PathVariable(value = "Id") int Id, @RequestBody @Validated LineItemDto lineItemDto) {
-    	LineItem lineItem = verifyLineItem(Id);
+        LineItem lineItem = verifyLineItem(Id);
         if (lineItemDto.getDescription() != null) {
-        	lineItem.setDescription(lineItemDto.getDescription());
+            lineItem.setDescription(lineItemDto.getDescription());
+            logger.info("Description updated for Line Item" + Id );
         }
         if (lineItemDto.getPrice() != null) {
-        	lineItem.setPrice(lineItemDto.getPrice());
+            lineItem.setPrice(lineItemDto.getPrice());
+            logger.info("Price updated for Line Item" + Id );
         }
         return toDto(lineItemRepository.save(lineItem));
     }
@@ -141,6 +149,7 @@ public class LineItemController {
     public void delete(@PathVariable(value = "invoiceId") int invoiceId, @PathVariable(value = "Id") int Id) {
         LineItem lineItem = verifyLineItem(Id);
         lineItemRepository.delete(lineItem);
+        logger.info("Line Item " + Id + " deleted");
     }
 
     
@@ -168,6 +177,7 @@ public class LineItemController {
     private Invoice verifyInvoice(int invoiceId) throws NoSuchElementException {
         Invoice invoice = invoiceRepository.findOne(invoiceId);
         if (invoice == null) {
+            logger.error("invoice " + invoiceId + " not present");
             throw new NoSuchElementException("Invoice does not exist " + invoiceId);
         }
         return invoice;

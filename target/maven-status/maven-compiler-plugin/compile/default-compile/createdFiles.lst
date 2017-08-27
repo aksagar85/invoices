@@ -1,0 +1,9 @@
+com/assignment/invoices/domain/Invoice.class
+com/assignment/invoices/domain/LineItem.class
+com/assignment/invoices/repo/InvoiceRepository.class
+com/assignment/invoices/services/LineItemService.class
+com/assignment/invoices/web/LineItemController.class
+com/assignment/invoices/web/LineItemDto.class
+com/assignment/invoices/repo/LineItemRepository.class
+com/assignment/invoices/services/InvoiceService.class
+com/assignment/invoices/InvoicesApplication.class
